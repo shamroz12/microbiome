@@ -53,24 +53,14 @@ for name, description in features:
     inputs.append(val)
 
 # ---------------- PREDICTION ----------------
-if st.button("Analyze Gut Health Pattern"):
-    X_input = np.array(inputs).reshape(1, -1)
-    X_scaled = scaler.transform(X_input)
+NUM_FEATURES = model.n_features_in_
 
-    prediction = model.predict(X_scaled)[0]
-    prob = model.predict_proba(X_scaled)[0][1]
+# Pad remaining features with 0.5
+while len(inputs) < NUM_FEATURES:
+    inputs.append(0.5)
 
-    st.subheader("Gut Health Stability Result")
-
-    if prob > 0.75:
-        st.success("Gut Microbiome Pattern: Stable")
-    elif prob > 0.5:
-        st.warning("Gut Microbiome Pattern: Moderate Imbalance")
-    else:
-        st.error("Gut Microbiome Pattern: High Imbalance Risk")
-
-    st.progress(int(prob * 100))
-    st.write(f"AI Confidence Score: {prob:.2f}")
+X_input = np.array(inputs).reshape(1, -1)
+X_scaled = scaler.transform(X_input)
 
     # ---------------- PERSONALIZED SUGGESTIONS ----------------
     st.subheader("Personalized Preventive Suggestions")
