@@ -1,99 +1,43 @@
 import streamlit as st
-import numpy as np
 import joblib
-import os
+import numpy as np
+import pandas as pd
 
-# -------------------------
-# Page Config
-# -------------------------
-st.set_page_config(
-    page_title="AI Microbiome Therapeutic Designer",
-    page_icon="🧬",
-    layout="centered"
-)
+# Load model and scaler
+model = joblib.load("microbiome_model_final.pkl")
+scaler = joblib.load("scaler.pkl")
 
-st.title("🧬 AI Microbiome Therapeutic Designer")
-st.write("Personalized Preventive Healthcare using AI & Microbiome Simulation")
+st.set_page_config(page_title="AI Microbiome Predictor", layout="centered")
 
-# -------------------------
-# Load Model Safely
-# -------------------------
-model_path = "microbiome_model.pkl"
-scaler_path = "scaler.pkl"
+st.title("AI-Driven Microbiome Stability Predictor")
+st.write("This tool simulates microbiome pattern classification using AI.")
 
-if not os.path.exists(model_path):
-    st.error("Model file not found. Please upload microbiome_model.pkl")
-    st.stop()
+st.sidebar.header("User Input")
 
-if not os.path.exists(scaler_path):
-    st.error("Scaler file not found. Please upload scaler.pkl")
-    st.stop()
+# Number of features must match training features
+NUM_FEATURES = model.n_features_in_
 
-model = joblib.load(model_path)
-scaler = joblib.load(scaler_path)
+st.write(f"Adjust microbial abundance sliders (Features: {NUM_FEATURES})")
 
-# -------------------------
-# User Inputs
-# -------------------------
-st.subheader("Patient Profile")
+# Create sliders dynamically
+inputs = []
+for i in range(NUM_FEATURES):
+    val = st.slider(f"Feature {i+1}", 0.0, 1.0, 0.5)
+    inputs.append(val)
 
-age = st.slider("Age", 5, 80, 25)
-sleep = st.slider("Sleep Hours", 3, 10, 7)
-activity = st.slider("Physical Activity Level", 1, 10, 5)
+# Predict Button
+if st.button("Predict Microbiome Pattern"):
+    X_input = np.array(inputs).reshape(1, -1)
+    X_scaled = scaler.transform(X_input)
 
-diet = st.selectbox(
-    "Diet Type",
-    ["Balanced", "Vegetarian", "High Protein", "Fast Food"]
-)
+    prediction = model.predict(X_scaled)[0]
+    prob = model.predict_proba(X_scaled)[0][1]
 
-stress = st.slider("Stress Level", 1, 10, 4)
-
-# -------------------------
-# Convert Inputs to Features
-# -------------------------
-diet_map = {
-    "Balanced": 0,
-    "Vegetarian": 1,
-    "High Protein": 2,
-    "Fast Food": 3
-}
-
-input_features = np.array([
-    age,
-    sleep,
-    activity,
-    diet_map[diet],
-    stress
-])
-
-# Expand to match PCA dimension (45 features)
-# Fill remaining features with random microbiome simulation
-simulated_microbiome = np.random.rand(40)
-
-final_input = np.concatenate((input_features, simulated_microbiome))
-final_input = final_input.reshape(1, -1)
-
-# Scale
-scaled_input = scaler.transform(final_input)
-
-# -------------------------
-# Prediction
-# -------------------------
-if st.button("Generate AI Prediction"):
-    prediction = model.predict(scaled_input)[0]
-    probability = model.predict_proba(scaled_input)[0][1]
+    st.subheader("Prediction Result")
 
     if prediction == 1:
-        st.error(f"⚠️ Higher Dysbiosis Risk Detected ({probability*100:.1f}%)")
+        st.success("Pattern Group: A")
     else:
-        st.success(f"✅ Healthy Microbiome Trend ({(1-probability)*100:.1f}%)")
+        st.warning("Pattern Group: B")
 
-    # Visualization
-    st.subheader("Microbiome Stability Score")
-    st.progress(int((1 - probability) * 100))
-
-# -------------------------
-# Footer
-# -------------------------
-st.write("---")
-st.caption("Research Prototype — Not for Clinical Use")
+    st.write(f"Confidence Score: {prob:.2f}")
