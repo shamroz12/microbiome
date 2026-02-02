@@ -7,93 +7,112 @@ import pandas as pd
 model = joblib.load("microbiome_model_final.pkl")
 scaler = joblib.load("scaler.pkl")
 
-st.set_page_config(page_title="AI Microbiome Health Tool", layout="wide")
+st.set_page_config(page_title="Personalized Gut Health AI", layout="wide")
 
-# ---------------- BANNER ----------------
-st.image("https://images.unsplash.com/photo-1581091870627-3c4e3f4a1a2b", use_column_width=True)
-
-st.title("AI-Driven Gut Microbiome Health Assessment")
-st.write("This interactive tool simulates gut microbial balance and predicts microbiome stability patterns using Artificial Intelligence.")
-
-# ---------------- USER EXPLANATION ----------------
-with st.expander("What are these inputs?"):
-    st.write("""
-    These sliders represent **relative microbial indicators** inside the human gut.
-    Since real microbiome sequencing data is complex, this demo uses normalized
-    values between 0 and 1.
-
-    **Example:**
-    - 0.2 → Low presence
-    - 0.5 → Moderate presence
-    - 0.8 → High presence
-
-    This tool is for **educational and research demonstration only**, not medical diagnosis.
-    """)
-
-# ---------------- FEATURE NAMES ----------------
-feature_names = [
-    "Firmicutes Ratio",
-    "Bacteroidetes Ratio",
-    "Proteobacteria Presence",
-    "Actinobacteria Level",
-    "Microbial Diversity Score",
-    "Inflammation Marker Proxy",
-    "Short Chain Fatty Acid Level",
-    "Pathogen Load Indicator",
-    "Beneficial Bacteria Index",
-    "Gut Stability Score"
-]
-
-st.sidebar.header("Microbiome Indicators (User Inputs)")
-
-NUM_FEATURES = model.n_features_in_
-inputs = []
-
-for i in range(NUM_FEATURES):
-    name = feature_names[i] if i < len(feature_names) else f"Microbial Factor {i+1}"
-    val = st.sidebar.slider(name, 0.0, 1.0, 0.5)
-    inputs.append(val)
-
-# ---------------- EXAMPLE SCENARIO ----------------
-st.sidebar.markdown("### Example Scenario")
-st.sidebar.write("""
-Healthy Adult Example:
-- Firmicutes Ratio → 0.6
-- Diversity Score → 0.8
-- Pathogen Load → 0.2
+# ---------------- HEADER ----------------
+st.title("AI-Driven Personalized Gut Health Simulator")
+st.write("""
+This interactive tool demonstrates how **lifestyle and diet patterns**
+can influence gut microbiome balance using Artificial Intelligence.
+It is designed for **research and educational purposes only**, not medical diagnosis.
 """)
 
+# ---------------- EXPLANATION ----------------
+with st.expander("What data am I entering?"):
+    st.write("""
+You are entering **lifestyle and dietary indicators** that indirectly
+influence gut bacteria.  
+
+Each slider ranges from **0 (Very Low)** to **1 (Very High)**.  
+
+The AI model converts these values into a simulated gut microbial balance
+and provides preventive health suggestions.
+""")
+
+# ---------------- USER INPUTS ----------------
+st.sidebar.header("Lifestyle & Gut Health Indicators")
+
+features = [
+    ("Daily Fiber Intake", "How much fruits, vegetables, whole grains you consume"),
+    ("Fermented Food Consumption", "Yogurt, kefir, kimchi, etc."),
+    ("Recent Antibiotic Usage", "Higher value means more recent/frequent use"),
+    ("Sugar Intake Level", "High sugar negatively impacts gut bacteria"),
+    ("Probiotic Consumption", "Supplements or probiotic foods"),
+    ("Stress Level", "Higher stress can disturb gut balance"),
+    ("Sleep Quality", "Better sleep improves microbiome health"),
+    ("Physical Activity", "Exercise supports microbial diversity"),
+    ("Processed Food Intake", "High processed food harms gut bacteria"),
+    ("Digestive Symptom Frequency", "Bloating, discomfort, irregularity")
+]
+
+inputs = []
+
+for name, description in features:
+    val = st.sidebar.slider(name, 0.0, 1.0, 0.5)
+    st.sidebar.caption(description)
+    inputs.append(val)
+
 # ---------------- PREDICTION ----------------
-if st.button("Analyze Microbiome Pattern"):
+if st.button("Analyze Gut Health Pattern"):
     X_input = np.array(inputs).reshape(1, -1)
     X_scaled = scaler.transform(X_input)
 
     prediction = model.predict(X_scaled)[0]
     prob = model.predict_proba(X_scaled)[0][1]
 
-    st.subheader("Health Pattern Result")
+    st.subheader("Gut Health Stability Result")
 
     if prob > 0.75:
-        st.success("Microbiome Pattern: Stable")
+        st.success("Gut Microbiome Pattern: Stable")
     elif prob > 0.5:
-        st.warning("Microbiome Pattern: Moderate Risk")
+        st.warning("Gut Microbiome Pattern: Moderate Imbalance")
     else:
-        st.error("Microbiome Pattern: High Risk")
+        st.error("Gut Microbiome Pattern: High Imbalance Risk")
 
     st.progress(int(prob * 100))
-    st.write(f"Confidence Score: {prob:.2f}")
+    st.write(f"AI Confidence Score: {prob:.2f}")
+
+    # ---------------- PERSONALIZED SUGGESTIONS ----------------
+    st.subheader("Personalized Preventive Suggestions")
+
+    if prob < 0.4:
+        st.write("""
+- Increase **fiber intake** (fruits, vegetables, legumes)  
+- Add **probiotic foods** like yogurt or kefir  
+- Reduce **processed food and sugar**  
+- Improve **sleep routine**  
+""")
+    elif prob < 0.7:
+        st.write("""
+- Maintain balanced diet  
+- Increase **physical activity**  
+- Monitor stress levels  
+- Continue probiotic foods occasionally  
+""")
+    else:
+        st.write("""
+- Your lifestyle currently supports **good gut stability**  
+- Continue balanced diet and exercise  
+- Maintain healthy sleep and stress habits  
+""")
 
     # ---------------- EXPLAINABLE AI ----------------
     if hasattr(model, "feature_importances_"):
-        st.subheader("Top Influencing Microbial Factors")
+        st.subheader("Key Factors Influencing AI Decision")
 
         importances = model.feature_importances_
+        feature_labels = [f[0] for f in features]
+
         feat_df = pd.DataFrame({
-            "Factor": [f"Factor {i+1}" for i in range(len(importances))],
-            "Importance": importances
-        }).sort_values(by="Importance", ascending=False).head(5)
+            "Factor": feature_labels,
+            "Importance": importances[:len(feature_labels)]
+        }).sort_values(by="Importance", ascending=False)
 
         st.bar_chart(feat_df.set_index("Factor"))
 
 # ---------------- DISCLAIMER ----------------
-st.info("Note: This is a computational simulation tool for research demonstration purposes only.")
+st.info("""
+This platform is a **computational simulation tool**.
+It does not replace clinical consultation.
+Its purpose is to demonstrate how AI can support **preventive personalized healthcare engineering**.
+""")
