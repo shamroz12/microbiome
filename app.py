@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # ---------------------------
 # LOAD MODEL
 # ---------------------------
-model = joblib.load("microbiome_model.pkl")
+model = joblib.load("microbiome_model_final.pkl")
 scaler = joblib.load("scaler.pkl")
 
 st.set_page_config(page_title="Gut Health AI", layout="wide")
